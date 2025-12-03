@@ -1,2 +1,2 @@
-# frame-fisher
+# FrameFisher
 App that search across multiple videos using AI

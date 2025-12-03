@@ -1,0 +1,55 @@
+﻿@page "/search"
+@using FrameFisher.Domain
+@using FrameFisher.Services
+
+@inject IRekaVisionService rekaVisionService
+
+<PageTitle>Search</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">Weather forecast</MudText>
+<MudText Typo="Typo.body1" Class="mb-8">This component demonstrates fetching data from the server.</MudText>
+
+@if (myVideos == null)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="myVideos" Hover="true" SortLabel="Sort By" Elevation="0" AllowUnsorted="false">
+        <HeaderContent> 
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<Video, object>(x=>x.Title ?? String.Empty)">Date</MudTableSortLabel></MudTh>
+            <MudTh>Thumbnail</MudTh>
+            <MudTh>Link</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Title">@context.Title</MudTd>
+            <MudTd DataLabel="Thumbnail"><MudImage Src="@context.Metadata?.Thumbnail"/> </MudTd>
+            <MudTd DataLabel="Link"><MudLink Target="_blank" Href="@context.Url"> link </MudLink> </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+    private Video[]? myVideos;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+            Video[] videoList = await rekaVisionService.GetAllVideos();
+            myVideos = videoList;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching videos: {ex.Message}");
+            myVideos = null;
+        }
+
+    }
+
+
+}

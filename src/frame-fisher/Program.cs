@@ -1,5 +1,6 @@
 using MudBlazor.Services;
-using frame_fisher.Components;
+using FrameFisher.Components;   
+using FrameFisher.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,10 @@ builder.Services.AddMudServices();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Register custom services
+builder.Services.AddScoped<IRekaVisionService, RekaVisionService>();
+
 
 var app = builder.Build();
 
