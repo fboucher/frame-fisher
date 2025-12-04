@@ -12,6 +12,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Register custom services
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IRekaVisionService, RekaVisionService>();
 
 
