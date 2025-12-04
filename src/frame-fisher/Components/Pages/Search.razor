@@ -6,8 +6,8 @@
 
 <PageTitle>Search</PageTitle>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Weather forecast</MudText>
-<MudText Typo="Typo.body1" Class="mb-8">This component demonstrates fetching data from the server.</MudText>
+
+<MudText Typo="Typo.body1" Class="mb-8">Here are all the videos of your library. You can remove or add more at your convenience.</MudText>
 
 @if (myVideos == null)
 {
@@ -23,7 +23,7 @@ else
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Title">@context.Title</MudTd>
-            <MudTd DataLabel="Thumbnail"><MudImage Src="@context.Metadata?.Thumbnail"/> </MudTd>
+            <MudTd DataLabel="Thumbnail"><MudImage Src="@context.Metadata?.Thumbnail" Style="height: 50px; object-fit: contain;" /> </MudTd>
             <MudTd DataLabel="Link"><MudLink Target="_blank" Href="@context.Url"> link </MudLink> </MudTd>
         </RowTemplate>
         <PagerContent>
