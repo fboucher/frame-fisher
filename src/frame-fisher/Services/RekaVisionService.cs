@@ -65,7 +65,7 @@ public class RekaVisionService : IRekaVisionService
     /// <param name="videoUrl">The URL of the video to upload</param>
     /// <param name="videoName">The name for the video</param>
     /// <returns>The uploaded video information</returns>
-    public async Task<Video> AddVideo(string videoUrl, string videoName)
+    public async Task<Video> AddVideoWithURL(string videoUrl, string videoName)
     {
         var request = CreateRequest(HttpMethod.Post, $"{BaseEndpoint}/videos/upload");
 
@@ -100,6 +100,66 @@ public class RekaVisionService : IRekaVisionService
         catch (JsonException ex)
         {
             throw new InvalidOperationException($"Failed to parse upload response for video {videoName} from Reka Vision API", ex);
+        }
+    }
+
+    /// <summary>
+    /// Uploads a video file to the Reka Vision service
+    /// </summary>
+    /// <param name="file">The video file to upload (from Blazor file input)</param>
+    /// <param name="videoName">The name for the video</param>
+    /// <param name="enableThumbnails">Whether to generate thumbnails for video chunks (optional, defaults to false)</param>
+    /// <returns>The uploaded video information</returns>
+    public async Task<Video> AddVideoWithFile(IFormFile file, string videoName, bool enableThumbnails = false)
+    {
+        if (file == null || file.Length == 0)
+        {
+            throw new ArgumentException("File is required and cannot be empty", nameof(file));
+        }
+
+        var request = CreateRequest(HttpMethod.Post, $"{BaseEndpoint}/videos/upload");
+
+        var formData = new MultipartFormDataContent();
+        
+        // Add form fields
+        formData.Add(new StringContent("true"), "index");
+        formData.Add(new StringContent(enableThumbnails.ToString().ToLower()), "enable_thumbnails");
+        formData.Add(new StringContent(videoName), "video_name");
+
+        // Add file content
+        using (var fileStream = file.OpenReadStream())
+        {
+            var streamContent = new StreamContent(fileStream);
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("video/mp4");
+            formData.Add(streamContent, "file", file.FileName);
+
+            request.Content = formData;
+
+            var responseContent = await SendRequestAsync(request, $"upload video file {videoName}");
+
+            try
+            {
+                // SaveResponseToFile(responseContent);
+
+                var rekaResponse = JsonSerializer.Deserialize<RekaVideoUploadResponse>(responseContent, _jsonOptions);
+
+                if (string.IsNullOrEmpty(rekaResponse?.VideoId))
+                {
+                    throw new InvalidOperationException("Failed to parse upload response from Reka Vision API");
+                }
+
+                var video = new Video
+                {
+                    VideoId = Guid.Parse(rekaResponse.VideoId),
+                    Url = string.Empty, // Local file upload doesn't have a URL
+                    IndexingStatus = ParseIndexingStatus(rekaResponse.Status)
+                };
+                return video;
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException($"Failed to parse upload response for video {videoName} from Reka Vision API", ex);
+            }
         }
     }
 

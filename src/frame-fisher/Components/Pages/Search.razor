@@ -3,11 +3,16 @@
 @using FrameFisher.Services
 
 @inject IRekaVisionService rekaVisionService
+@inject IDialogService DialogService
 
 <PageTitle>Search</PageTitle>
 
 
 <MudText Typo="Typo.body1" Class="mb-8">Here are all the videos of your library. You can remove or add more at your convenience.</MudText>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenUploadDialog" Class="mb-4">Add Video</MudButton>
+
+
 
 @if (myVideos == null)
 {
@@ -37,7 +42,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-
         try
         {
             Video[] videoList = await rekaVisionService.GetAllVideos();
@@ -48,8 +52,11 @@ else
             Console.WriteLine($"Error fetching videos: {ex.Message}");
             myVideos = null;
         }
-
     }
 
-
+    private Task OpenUploadDialog()
+    {
+        var options = new DialogOptions() { CloseButton = true };
+        return DialogService.ShowAsync<UploadVideoDialog>("Upload Video", options);
+    }
 }

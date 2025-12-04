@@ -11,12 +11,21 @@ public interface IRekaVisionService
     Task<Video[]> GetAllVideos();
 
     /// <summary>
-    /// Uploads a video to the Reka Vision service
+    /// Uploads a video to the Reka Vision service via URL
     /// </summary>
     /// <param name="videoUrl">The URL of the video to upload</param>
     /// <param name="videoName">The name for the video</param>
     /// <returns>The uploaded video information</returns>
-    Task<Video> AddVideo(string videoUrl, string videoName);
+    Task<Video> AddVideoWithURL(string videoUrl, string videoName);
+
+    /// <summary>
+    /// Uploads a video file to the Reka Vision service
+    /// </summary>
+    /// <param name="file">The video file to upload (from Blazor file input)</param>
+    /// <param name="videoName">The name for the video</param>
+    /// <param name="enableThumbnails">Whether to generate thumbnails for video chunks (optional, defaults to false)</param>
+    /// <returns>The uploaded video information</returns>
+    Task<Video> AddVideoWithFile(IFormFile file, string videoName, bool enableThumbnails = false);
 
     /// <summary>
     /// Deletes videos from the Reka Vision service
