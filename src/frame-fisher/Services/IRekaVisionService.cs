@@ -38,8 +38,9 @@ public interface IRekaVisionService
     /// Searches for video segments matching the query
     /// </summary>
     /// <param name="query">The search query</param>
+    /// <param name="threshold">The similarity threshold (optional, defaults to 0.6)</param>
     /// <returns>A list of search results with timestamps</returns>
-    Task<List<SearchResult>> Search(string query);
+    Task<List<SearchResult>> Search(string query, double threshold = 0.6);
 
     /// <summary>
     /// Asks a question about a specific video

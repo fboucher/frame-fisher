@@ -27,4 +27,10 @@ public class RekaSearchResultDto
 
     [JsonPropertyName("plain_text_caption")]
     public string PlainTextCaption { get; set; } = string.Empty;
+
+    [JsonPropertyName("video_title")]
+    public string VideoTitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("video_thumbnails")]
+    public string VideoThumbnails { get; set; } = string.Empty;
 }

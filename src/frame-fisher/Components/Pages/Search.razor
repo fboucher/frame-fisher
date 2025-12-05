@@ -44,10 +44,69 @@ else
             <MudTablePager PageSizeOptions="new int[]{50, 100}" />
         </PagerContent>
     </MudTable>
+
+    <MudStack Row="true">
+        <MudTextField 
+            @bind-Value="searchQuery" 
+            Label="What are you looking for?" 
+            Variant="Variant.Text" 
+            Adornment="Adornment.Start" 
+            AdornmentIcon="@Icons.Material.Filled.Search" />
+        <MudButton 
+            Variant="Variant.Filled" 
+            Color="Color.Primary" 
+            StartIcon="@Icons.Material.Filled.Search" 
+            Class="mt-6" 
+            Disabled="@isSearching"
+            OnClick="async () => await SearchVideos(searchQuery)">Search</MudButton>
+    </MudStack>
+    <MudSlider @bind-Value="threshold" Min="0.1" Max="1" Step="0.1" Variant="Variant.Filled" Color="Color.Info">Value: @threshold.ToString("F2")</MudSlider>
+
+    @if (isSearching)
+    {
+        <MudStack AlignItems="AlignItems.Center" Class="mt-6">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            <MudText Typo="Typo.body2" Class="mt-2">Searching...</MudText>
+        </MudStack>
+    }
+    else if (searchResults != null)
+    {
+        <MudText Typo="Typo.h6" Class="mt-6 mb-4">Search Results:</MudText>
+        <MudCheckBox
+            Dense="true" 
+            Value="@onlyGreaterConfidence" 
+            Label="Show results with score higher than threshold"  
+            ValueChanged="FilterSearchResults"  
+            T="bool" />
+        <MudTable Items="filteredSearchResults" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>Video Title</MudTh>
+                <MudTh>Time</MudTh>
+                <MudTh>Score</MudTh>
+                <MudTh>Description</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Video Title">@context.Title</MudTd>
+                <MudTd DataLabel="Time">
+                    @context.StartTimestamp.ToString("F2") - @context.EndTimestamp.ToString("F2")
+                </MudTd>
+                <MudTd DataLabel="Score">@context.Score.ToString("P2")</MudTd>
+                <MudTd DataLabel="Description">@context.PlainTextCaption</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+
+    <br/><br/><br/>
 }
 
 @code {
     private Video[]? myVideos;
+    private bool onlyGreaterConfidence = true;
+    private string searchQuery = string.Empty;
+    private List<SearchResult>? searchResults;
+    private List<SearchResult>? filteredSearchResults;
+    private double threshold = 0.6;
+    private bool isSearching = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,4 +148,37 @@ else
             Console.WriteLine($"Delete error: {ex}");
         }
     }
+
+    private async Task SearchVideos(string query)
+    {
+        try
+        {   
+            double minScore = onlyGreaterConfidence ? threshold : 0.0;
+
+            searchResults = null;   
+            isSearching = true;
+            searchResults = await rekaVisionService.Search(query, threshold);
+            filteredSearchResults = searchResults.Where(r => r.Score >= minScore).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error during search: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Search error: {ex}");
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
+
+    private void FilterSearchResults(bool value)
+    {
+        onlyGreaterConfidence = value;
+        if (searchResults == null)
+            return;
+
+        double minScore = onlyGreaterConfidence ? threshold : 0.0;
+        filteredSearchResults = searchResults.Where(r => r.Score >= minScore).ToList();
+    }
+    
 }

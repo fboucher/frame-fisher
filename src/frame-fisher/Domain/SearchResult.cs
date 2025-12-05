@@ -46,4 +46,10 @@ public class SearchResult
     /// Title of the video
     /// </summary>
     public string Title { get; set; } = string.Empty;
+
+
+    /// <summary>
+    /// Thumbnail URL of the video
+    /// </summary>
+    public string ThumbnailUrl { get; set; } = string.Empty;
 }
