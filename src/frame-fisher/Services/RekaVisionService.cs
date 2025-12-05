@@ -186,8 +186,9 @@ public class RekaVisionService : IRekaVisionService
     /// Searches for video segments matching the query
     /// </summary>
     /// <param name="query">The search query</param>
+    /// <param name="threshold">The similarity threshold (optional, defaults to 0.6)</param>
     /// <returns>A list of search results with timestamps</returns>
-    public async Task<List<SearchResult>> Search(string query)
+    public async Task<List<SearchResult>> Search(string query, double threshold = 0.6)
     {
         var request = CreateRequest(HttpMethod.Post, $"{BaseEndpoint}/search/hybrid");
 
@@ -195,7 +196,7 @@ public class RekaVisionService : IRekaVisionService
         {
             query = query,
             max_results = 3,
-            threshold = 0.6
+            threshold = threshold
         };
         var jsonContent = JsonSerializer.Serialize(requestBody);
         request.Content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
@@ -206,15 +207,15 @@ public class RekaVisionService : IRekaVisionService
         {
             // SaveResponseToFile(responseContent);
 
-            var results = JsonSerializer.Deserialize<List<RekaSearchResultDto>>(responseContent, _jsonOptions);
+            var searchResults = JsonSerializer.Deserialize<RekaSearchResultsDto>(responseContent, _jsonOptions);
 
-            if (results == null)
+            if (searchResults == null)
             {
                 _logger.LogWarning("No search results found in response or response format unexpected");
                 return new List<SearchResult>();
             }
 
-            var domainResults = results.Select(r => new SearchResult
+            var domainResults = searchResults.Results.Select(r => new SearchResult
             {
                 VideoChunkId = Guid.Parse(r.VideoChunkId),
                 VideoId = Guid.Parse(r.VideoId),
@@ -222,7 +223,9 @@ public class RekaVisionService : IRekaVisionService
                 StartTimestamp = r.StartTimestamp,
                 EndTimestamp = r.EndTimestamp,
                 S3PresignedUrl = r.S3PresignedUrl,
-                PlainTextCaption = r.PlainTextCaption
+                PlainTextCaption = r.PlainTextCaption,
+                ThumbnailUrl = r.VideoThumbnails,
+                Title = r.VideoTitle
             }).ToList();
             return domainResults;
         }
