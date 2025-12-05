@@ -70,10 +70,10 @@
             await rekaVisionService.AddVideoWithFile(
                 new FormFileWrapper(selectedFile),
                 videoName,
-                enableThumbnails: false
+                enableThumbnails: true
             );
 
-            Snackbar.Add("Video uploaded successfully!", Severity.Success);
+            Snackbar.Add("Video uploaded successfully! It should be available soon.", Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
