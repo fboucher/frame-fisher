@@ -1,13 +1,20 @@
 ﻿@page "/search"
 @using FrameFisher.Domain
 @using FrameFisher.Services
+@using System.Collections
 
 @inject IRekaVisionService rekaVisionService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>Search</PageTitle>
 
 
 <MudText Typo="Typo.body1" Class="mb-8">Here are all the videos of your library. You can remove or add more at your convenience.</MudText>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenUploadDialog" Class="mb-4">Add Video</MudButton>
+<MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Default" OnClick="RefreshVideoList" Class="mb-4" />
+
 
 @if (myVideos == null)
 {
@@ -16,15 +23,22 @@
 else
 {
     <MudTable Items="myVideos" Hover="true" SortLabel="Sort By" Elevation="0" AllowUnsorted="false">
-        <HeaderContent> 
+        <HeaderContent>
+            <MudTh></MudTh>
             <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<Video, object>(x=>x.Title ?? String.Empty)">Date</MudTableSortLabel></MudTh>
             <MudTh>Thumbnail</MudTh>
             <MudTh>Link</MudTh>
         </HeaderContent>
         <RowTemplate>
+
+            <MudTd DataLabel="">
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="async () => await DeleteVideo(context.VideoId)" />
+            </MudTd>
+
             <MudTd DataLabel="Title">@context.Title</MudTd>
-            <MudTd DataLabel="Thumbnail"><MudImage Src="@context.Metadata?.Thumbnail" Style="height: 50px; object-fit: contain;" /> </MudTd>
+            <MudTd DataLabel="Thumbnail"><MudImage Src="@context.Metadata?.Thumbnail" Style="height: 80px; object-fit: contain;" /> </MudTd>
             <MudTd DataLabel="Link"><MudLink Target="_blank" Href="@context.Url"> link </MudLink> </MudTd>
+
         </RowTemplate>
         <PagerContent>
             <MudTablePager PageSizeOptions="new int[]{50, 100}" />
@@ -37,7 +51,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-
         try
         {
             Video[] videoList = await rekaVisionService.GetAllVideos();
@@ -48,8 +61,32 @@ else
             Console.WriteLine($"Error fetching videos: {ex.Message}");
             myVideos = null;
         }
-
     }
 
+    private async Task OpenUploadDialog()
+    {
+        var options = new DialogOptions() { CloseButton = true };
+        await DialogService.ShowAsync<UploadVideoDialog>("Upload Video", options);
+        await RefreshVideoList();
+    }
 
+    private async Task RefreshVideoList()
+    {
+        myVideos = await rekaVisionService.GetAllVideos();
+    }
+
+    private async Task DeleteVideo(Guid videoId)
+    {
+        try
+        {
+            await rekaVisionService.DeleteVideos(new Guid[] { videoId });
+            Snackbar.Add("Video deleted successfully!", Severity.Success);
+            await RefreshVideoList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting video: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Delete error: {ex}");
+        }
+    }
 }

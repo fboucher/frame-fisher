@@ -1,0 +1,131 @@
+@using FrameFisher.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using MudBlazor
+
+@inject IRekaVisionService rekaVisionService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Upload Video</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="4">
+            <MudTextField @bind-Value="videoName" Label="Video Name" Placeholder="Enter video name" />
+            
+            <div>
+                <MudText Typo="Typo.body2" Class="mb-2">Select Video File (MP4)</MudText>
+                <InputFile OnChange="OnFileSelected" accept=".mp4" />
+                @if (selectedFile != null)
+                {
+                    <MudText Typo="Typo.caption" Class="mt-2">
+                        Selected: @selectedFile.Name (@FormatFileSize(selectedFile.Size))
+                    </MudText>
+                }
+            </div>
+
+            @if (isUploading)
+            {
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    <MudText Typo="Typo.body2">Uploading...</MudText>
+                </MudStack>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Upload" Disabled="@(string.IsNullOrWhiteSpace(videoName) || selectedFile == null || isUploading)">
+            Upload
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] 
+    public IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private string videoName = "";
+    private IBrowserFile? selectedFile;
+    private bool isUploading = false;
+    private void Cancel() => MudDialog.Cancel();
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+    }
+
+    private async Task Upload()
+    {
+        if (string.IsNullOrWhiteSpace(videoName) || selectedFile == null)
+        {
+            Snackbar.Add("Please provide a video name and select a file", Severity.Warning);
+            return;
+        }
+
+        isUploading = true;
+
+        try
+        {
+            await rekaVisionService.AddVideoWithFile(
+                new FormFileWrapper(selectedFile),
+                videoName,
+                enableThumbnails: true
+            );
+
+            Snackbar.Add("Video uploaded successfully! It should be available soon.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error uploading video: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Upload error: {ex}");
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+   
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    /// <summary>
+    /// Wrapper class to convert IBrowserFile to IFormFile for the service
+    /// </summary>
+    private class FormFileWrapper : IFormFile
+    {
+        private readonly IBrowserFile _browserFile;
+
+        public FormFileWrapper(IBrowserFile browserFile)
+        {
+            _browserFile = browserFile;
+        }
+
+        public string ContentType => _browserFile.ContentType;
+        public string ContentDisposition => throw new NotImplementedException();
+        public IHeaderDictionary Headers => throw new NotImplementedException();
+        public long Length => _browserFile.Size;
+        public string Name => _browserFile.Name;
+        public string FileName => _browserFile.Name;
+
+        public void CopyTo(Stream target) => throw new NotImplementedException();
+        public Task CopyToAsync(Stream target, CancellationToken cancellationToken = default) =>
+            _browserFile.OpenReadStream(maxAllowedSize: long.MaxValue).CopyToAsync(target, cancellationToken);
+        public Stream OpenReadStream() =>
+            _browserFile.OpenReadStream(maxAllowedSize: long.MaxValue);
+    }
+}
+
